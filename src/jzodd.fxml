@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import java.lang.String?>
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.Button?>
@@ -16,149 +17,201 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-<AnchorPane fx:id="root" maxHeight="480.0" maxWidth="640.0" minHeight="480.0" minWidth="640.0" prefHeight="480.0" prefWidth="640.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
+<AnchorPane fx:id="root" maxHeight="600.0" maxWidth="800.0" minHeight="600.0" minWidth="800.0" prefHeight="600.0" prefWidth="800.0" stylesheets="@view/style.css" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1">
    <children>
-      <FlowPane prefHeight="200.0" prefWidth="200.0" AnchorPane.leftAnchor="10.0">
+      <FlowPane layoutX="-6.0" prefHeight="600.0" prefWidth="810.0" AnchorPane.leftAnchor="-6.0">
          <children>
-          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="473.0" prefWidth="624.0">
+          <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="599.0" prefWidth="804.0">
                <children>
-                  <HBox layoutX="199.0" layoutY="137.0" prefHeight="374.0" prefWidth="598.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                  <GridPane prefHeight="600.0" prefWidth="804.0">
+                    <columnConstraints>
+                      <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                    </columnConstraints>
+                    <rowConstraints>
+                      <RowConstraints maxHeight="568.0" minHeight="10.0" prefHeight="543.0" vgrow="SOMETIMES" />
+                        <RowConstraints maxHeight="388.0" minHeight="0.0" prefHeight="57.0" />
+                    </rowConstraints>
                      <children>
-                        <AnchorPane prefHeight="356.0" prefWidth="273.0">
+                        <HBox prefHeight="624.0" prefWidth="624.0">
                            <children>
-                              <FlowPane layoutX="-2.0" layoutY="77.0" prefHeight="355.0" prefWidth="198.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                              <AnchorPane prefHeight="568.0" prefWidth="350.0">
                                  <children>
-                                    <GridPane prefHeight="474.0" prefWidth="254.0">
-                                      <columnConstraints>
-                                        <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
-                                      </columnConstraints>
-                                      <rowConstraints>
-                                        <RowConstraints maxHeight="173.0" minHeight="15.0" prefHeight="5.0" vgrow="SOMETIMES" />
-                                        <RowConstraints maxHeight="320.99999237060547" minHeight="10.0" prefHeight="111.0" vgrow="SOMETIMES" />
-                                          <RowConstraints maxHeight="320.99999237060547" minHeight="10.0" prefHeight="15.0" vgrow="SOMETIMES" />
-                                          <RowConstraints maxHeight="320.99999237060547" minHeight="10.0" prefHeight="120.0" vgrow="SOMETIMES" />
-                                          <RowConstraints maxHeight="320.99999237060547" minHeight="10.0" prefHeight="123.0" vgrow="SOMETIMES" />
-                                          <RowConstraints maxHeight="320.99999237060547" minHeight="17.0" prefHeight="27.0" vgrow="SOMETIMES" />
-                                      </rowConstraints>
+                                    <FlowPane layoutX="-2.0" layoutY="77.0" prefHeight="568.0" prefWidth="350.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                        <children>
-                                          <Label styleClass="text" text="Chords" GridPane.halignment="CENTER" GridPane.valignment="CENTER">
-                                             <GridPane.margin>
-                                                <Insets />
-                                             </GridPane.margin>
-                                          </Label>
-                                          <TextArea fx:id="chordsTextArea" prefHeight="200.0" prefWidth="200.0" promptText="Enter chords here..." styleClass="text" wrapText="true" GridPane.rowIndex="1" />
-                                          <FlowPane prefHeight="200.0" prefWidth="200.0" GridPane.rowIndex="2">
+                                          <GridPane prefHeight="568.0" prefWidth="351.0">
+                                            <columnConstraints>
+                                              <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
+                                            </columnConstraints>
+                                            <rowConstraints>
+                                              <RowConstraints maxHeight="173.0" minHeight="15.0" prefHeight="41.0" vgrow="SOMETIMES" />
+                                              <RowConstraints maxHeight="320.99999237060547" minHeight="10.0" prefHeight="166.0" vgrow="SOMETIMES" />
+                                                <RowConstraints maxHeight="320.99999237060547" minHeight="0.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints maxHeight="166.0" minHeight="10.0" prefHeight="166.0" vgrow="SOMETIMES" />
+                                                <RowConstraints maxHeight="320.99999237060547" minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                                                <RowConstraints maxHeight="166.0" minHeight="10.0" prefHeight="166.0" vgrow="SOMETIMES" />
+                                            </rowConstraints>
                                              <children>
-                                                <HBox prefHeight="21.0" prefWidth="200.0">
+                                                <Label styleClass="text" text="Chords">
+                                                   <GridPane.margin>
+                                                      <Insets left="10.0" />
+                                                   </GridPane.margin>
+                                                   <padding>
+                                                      <Insets top="10.0" />
+                                                   </padding>
+                                                </Label>
+                                                <TextArea fx:id="chordsTextArea" prefHeight="200.0" prefWidth="200.0" promptText="Enter chords here..." styleClass="text" wrapText="true" GridPane.rowIndex="1" />
+                                                <FlowPane prefHeight="3.0" prefWidth="351.0" GridPane.rowIndex="2">
                                                    <children>
-                                                      <AnchorPane prefHeight="21.0" prefWidth="15.0">
+                                                      <HBox prefHeight="21.0" prefWidth="200.0">
                                                          <children>
-                                                            <Label layoutY="2.0" styleClass="text" text="Rhythm" AnchorPane.leftAnchor="10.0" />
+                                                            <AnchorPane prefHeight="21.0" prefWidth="15.0">
+                                                               <children>
+                                                                  <Label layoutY="2.0" styleClass="text" text="Right Hand Rhythm" AnchorPane.leftAnchor="10.0" />
+                                                               </children>
+                                                            </AnchorPane>
+                                                            <AnchorPane prefHeight="21.0" prefWidth="206.0">
+                                                               <HBox.margin>
+                                                                  <Insets left="180.0" />
+                                                               </HBox.margin>
+                                                            </AnchorPane>
                                                          </children>
-                                                      </AnchorPane>
-                                                      <AnchorPane prefHeight="21.0" prefWidth="206.0">
-                                                         <children>
-                                                            <Label layoutX="18.0" layoutY="2.0" styleClass="text" text="Bass?" />
-                                                            <RadioButton fx:id="rBass" layoutX="56.0" layoutY="2.0" mnemonicParsing="false" styleClass="text" text="R" />
-                                                            <RadioButton fx:id="lBass" layoutX="96.0" layoutY="2.0" mnemonicParsing="false" styleClass="text" text="L" />
-                                                         </children>
-                                                      </AnchorPane>
+                                                      </HBox>
                                                    </children>
-                                                </HBox>
+                                                   <GridPane.margin>
+                                                      <Insets top="2.0" />
+                                                   </GridPane.margin>
+                                                </FlowPane>
+                                                <TextArea fx:id="rRhythmTextArea" prefHeight="180.0" prefWidth="200.0" promptText="Enter right hand rhythm here..." styleClass="text" wrapText="true" GridPane.rowIndex="3">
+                                                   <GridPane.margin>
+                                                      <Insets top="5.0" />
+                                                   </GridPane.margin>
+                                                </TextArea>
+                                                <FlowPane prefHeight="3.0" prefWidth="351.0" GridPane.rowIndex="4">
+                                                   <children>
+                                                      <HBox prefHeight="21.0" prefWidth="200.0">
+                                                         <children>
+                                                            <AnchorPane prefHeight="21.0" prefWidth="15.0">
+                                                               <children>
+                                                                  <Label layoutY="2.0" styleClass="text" text="Left Hand Rhythm" AnchorPane.leftAnchor="10.0" />
+                                                               </children>
+                                                            </AnchorPane>
+                                                            <AnchorPane prefHeight="21.0" prefWidth="206.0">
+                                                               <children>
+                                                                  <Label layoutX="8.0" layoutY="2.0" styleClass="text" text="Bass?" />
+                                                                  <RadioButton fx:id="lBass" layoutX="56.0" layoutY="2.0" mnemonicParsing="false" styleClass="text" />
+                                                               </children>
+                                                               <HBox.margin>
+                                                                  <Insets left="110.0" />
+                                                               </HBox.margin>
+                                                            </AnchorPane>
+                                                         </children>
+                                                      </HBox>
+                                                   </children>
+                                                </FlowPane>
+                                                <TextArea fx:id="lRhythmTextArea" prefHeight="180.0" prefWidth="200.0" promptText="Enter left hand rhythm here..." styleClass="text" wrapText="true" GridPane.rowIndex="5">
+                                                   <GridPane.margin>
+                                                      <Insets bottom="10.0" />
+                                                   </GridPane.margin>
+                                                </TextArea>
                                              </children>
-                                             <GridPane.margin>
-                                                <Insets top="2.0" />
-                                             </GridPane.margin>
-                                          </FlowPane>
-                                          <TextArea fx:id="rRhythmTextArea" prefHeight="159.0" prefWidth="200.0" promptText="Enter right hand rhythm here..." styleClass="text" wrapText="true" GridPane.rowIndex="3">
-                                             <GridPane.margin>
-                                                <Insets top="5.0" />
-                                             </GridPane.margin>
-                                          </TextArea>
-                                          <TextArea fx:id="lRhythmTextArea" prefHeight="200.0" prefWidth="200.0" promptText="Enter left hand rhythm here..." styleClass="text" wrapText="true" GridPane.rowIndex="4">
-                                             <GridPane.margin>
-                                                <Insets bottom="10.0" />
-                                             </GridPane.margin>
-                                          </TextArea>
-                                          <FlowPane prefHeight="67.0" prefWidth="200.0" GridPane.rowIndex="5">
-                                             <children>
-                                                <Label styleClass="text" text="BPM">
-                                                   <FlowPane.margin>
-                                                      <Insets top="10.0" />
-                                                   </FlowPane.margin>
-                                                </Label>
-                                                <TextField fx:id="bpmTextField" prefHeight="25.0" prefWidth="40.0" styleClass="text">
-                                                   <FlowPane.margin>
-                                                      <Insets left="5.0" top="10.0" />
-                                                   </FlowPane.margin>
-                                                </TextField>
-                                                <Label styleClass="text" text="Velocity">
-                                                   <FlowPane.margin>
-                                                      <Insets left="5.0" top="10.0" />
-                                                   </FlowPane.margin>
-                                                </Label>
-                                                <TextField fx:id="velocityTextField" prefHeight="25.0" prefWidth="31.0" styleClass="text">
-                                                   <FlowPane.margin>
-                                                      <Insets left="5.0" top="10.0" />
-                                                   </FlowPane.margin>
-                                                </TextField>
-                                                <Label styleClass="text" text="TS">
-                                                   <FlowPane.margin>
-                                                      <Insets left="5.0" top="10.0" />
-                                                   </FlowPane.margin>
-                                                </Label>
-                                                <TextField fx:id="num" prefWidth="25.0" promptText="n" styleClass="text" text="4">
-                                                   <FlowPane.margin>
-                                                      <Insets left="5.0" top="5.0" />
-                                                   </FlowPane.margin>
-                                                </TextField>
-                                                <TextField fx:id="den" prefWidth="25.0" promptText="d" styleClass="text" text="4">
-                                                   <FlowPane.margin>
-                                                      <Insets top="10.0" />
-                                                   </FlowPane.margin>
-                                                </TextField>
-                                             </children>
-                                             <GridPane.margin>
-                                                <Insets bottom="10.0" left="10.0" />
-                                             </GridPane.margin>
-                                          </FlowPane>
+                                          </GridPane>
                                        </children>
-                                    </GridPane>
+                                    </FlowPane>
                                  </children>
-                              </FlowPane>
-                           </children>
-                        </AnchorPane>
-                        <AnchorPane prefHeight="364.0" prefWidth="385.0">
-                           <children>
-                              <VBox layoutX="-37.0" layoutY="77.0" prefHeight="364.0" prefWidth="293.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                 <HBox.margin>
+                                    <Insets left="10.0" />
+                                 </HBox.margin>
+                              </AnchorPane>
+                              <AnchorPane prefHeight="0.0" prefWidth="368.0">
                                  <children>
-                                    <HBox prefHeight="255.0" prefWidth="363.0" style="-fx-border-style: solid inside;">
+                                    <VBox layoutX="-37.0" layoutY="77.0" prefHeight="568.0" prefWidth="442.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
                                        <children>
-                                          <Canvas fx:id="previewCanvas" height="400.0" styleClass="text" width="361.0">
-                                             <HBox.margin>
-                                                <Insets />
-                                             </HBox.margin>
-                                          </Canvas>
+                                          <HBox prefHeight="485.0" prefWidth="427.0" style="-fx-border-style: solid inside;">
+                                             <children>
+                                                <Canvas fx:id="previewCanvas" height="520.0" styleClass="text" width="425.0">
+                                                   <HBox.margin>
+                                                      <Insets />
+                                                   </HBox.margin>
+                                                </Canvas>
+                                             </children>
+                                             <VBox.margin>
+                                                <Insets bottom="5.0" right="5.0" top="35.0" />
+                                             </VBox.margin>
+                                          </HBox>
                                        </children>
-                                       <VBox.margin>
-                                          <Insets right="5.0" top="25.0" />
-                                       </VBox.margin>
-                                    </HBox>
-                                    <AnchorPane prefHeight="36.0" prefWidth="324.0">
-                                       <children>
-                                          <Button fx:id="generateMidiButton" layoutY="5.0" mnemonicParsing="false" onAction="#generateMidi" styleClass="text" text="Generate" AnchorPane.leftAnchor="0.0" />
-                                          <ToggleButton fx:id="readMe" layoutX="261.0" layoutY="5.0" mnemonicParsing="false" onMouseClicked="#readMeDisplay" styleClass="text" text="Read Me" AnchorPane.leftAnchor="80.0" />
-                                       </children>
-                                       <VBox.margin>
-                                          <Insets bottom="5.0" left="210.0" top="10.0" />
-                                       </VBox.margin>
-                                    </AnchorPane>
+                                       <padding>
+                                          <Insets left="10.0" />
+                                       </padding>
+                                    </VBox>
                                  </children>
-                              </VBox>
+                              </AnchorPane>
                            </children>
-                        </AnchorPane>
+                        </HBox>
+                        <FlowPane prefHeight="21.0" prefWidth="794.0" GridPane.rowIndex="1">
+                           <children>
+                              <Label styleClass="text" text="BPM">
+                                 <FlowPane.margin>
+                                    <Insets top="10.0" />
+                                 </FlowPane.margin>
+                              </Label>
+                              <TextField fx:id="bpmTextField" prefHeight="25.0" prefWidth="60.0" styleClass="text">
+                                 <FlowPane.margin>
+                                    <Insets left="5.0" top="10.0" />
+                                 </FlowPane.margin>
+                              </TextField>
+                              <Label styleClass="text" text="Velocity">
+                                 <FlowPane.margin>
+                                    <Insets left="5.0" top="10.0" />
+                                 </FlowPane.margin>
+                              </Label>
+                              <TextField fx:id="velocityTextField" prefHeight="25.0" prefWidth="60.0" styleClass="text">
+                                 <FlowPane.margin>
+                                    <Insets left="5.0" top="10.0" />
+                                 </FlowPane.margin>
+                              </TextField>
+                              <Label styleClass="text" text="TS">
+                                 <FlowPane.margin>
+                                    <Insets left="5.0" top="10.0" />
+                                 </FlowPane.margin>
+                              </Label>
+                              <TextField fx:id="num" prefWidth="40.0" promptText="n" styleClass="text" text="4">
+                                 <FlowPane.margin>
+                                    <Insets left="5.0" top="5.0" />
+                                 </FlowPane.margin>
+                              </TextField>
+                              <TextField fx:id="den" prefWidth="40.0" promptText="d" styleClass="text" text="4">
+                                 <FlowPane.margin>
+                                    <Insets top="10.0" />
+                                 </FlowPane.margin>
+                              </TextField>
+                              <Button fx:id="generateMidiButton" mnemonicParsing="false" onAction="#generateMidi" text="Generate">
+                                 <styleClass>
+                                    <String fx:value="text" />
+                                    <String fx:value="button" />
+                                 </styleClass>
+                                 <FlowPane.margin>
+                                    <Insets left="220.0" top="10.0" />
+                                 </FlowPane.margin>
+                              </Button>
+                              <ToggleButton fx:id="readMe" mnemonicParsing="false" onMouseClicked="#readMeDisplay" text="Read Me">
+                                 <styleClass>
+                                    <String fx:value="text" />
+                                    <String fx:value="toggle-button" />
+                                 </styleClass>
+                                 <FlowPane.margin>
+                                    <Insets left="10.0" top="10.0" />
+                                 </FlowPane.margin>
+                              </ToggleButton>
+                           </children>
+                           <GridPane.margin>
+                              <Insets bottom="15.0" left="10.0" />
+                           </GridPane.margin>
+                           <padding>
+                              <Insets left="10.0" />
+                           </padding>
+                        </FlowPane>
                      </children>
-                  </HBox>
+                  </GridPane>
                </children>
             </AnchorPane>
          </children>

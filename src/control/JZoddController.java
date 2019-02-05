@@ -4,6 +4,7 @@ import java.awt.GraphicsEnvironment;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.net.URL;
@@ -34,20 +35,20 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCodeCombination;
-import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import midi.MidiBuilder;
 import midi.Progression;
 
+/**
+ * Controller object that handles a bunch o' stuff.
+ * @author Matt Farstad
+ * @version 1.0
+ */
 public class JZoddController implements Initializable {
 
 	private ToggleGroup tg = new ToggleGroup();
-
-	private Scanner scan = null;
 
 	private String save = "";
 
@@ -60,13 +61,6 @@ public class JZoddController implements Initializable {
 	public PrintStream ps;
 
 	public JZoddController() {
-
-		try {
-			scan = new Scanner(new File("README.txt"));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		}
-
 	}
 
 	@FXML
@@ -82,7 +76,7 @@ public class JZoddController implements Initializable {
 	private TextArea lRhythmTextArea, rRhythmTextArea, chordsTextArea;
 
 	@FXML
-	private RadioButton lBass, rBass;
+	private RadioButton lBass;
 
 	@FXML
 	private Canvas previewCanvas;
@@ -112,7 +106,7 @@ public class JZoddController implements Initializable {
 				Progression p = new Progression(chords);
 
 				Groove g1 = new Groove(lBass.isSelected(), lRhythm);
-				Groove g2 = new Groove(rBass.isSelected(), rRhythm);
+				Groove g2 = new Groove(false, rRhythm);
 
 				p.addGrooveChannel(g1);
 				p.addGrooveChannel(g2);
@@ -172,22 +166,53 @@ public class JZoddController implements Initializable {
 		e.execute(new Runnable() {
 			@Override
 			public void run() {
+				Scanner scan = new Scanner("[Chords]\r\n" + 
+						"\r\n" + 
+						" 	Chords can be maj, min, aug, or dim with up to two extensions from 6-13 \r\n" + 
+						" (5-13 on the second/ third) on all the obvious points (no b12 or #8 sorry!) \r\n" + 
+						" over any bass note. Exceptions are in place and will be output to limit\r\n" + 
+						" malformed chord notation. Inversions are limited by number of notes in the \r\n" + 
+						" chord, so C:^^^ is invalid but C7:^^^ is valid. X (a number) will add a line \r\n" + 
+						" to the engine X times, and one layer of encapsulation has been tested and is \r\n" + 
+						" functioning.\r\n" + 
+						" \r\n" + 
+						"	- (Ebmaj7/Ab:4^^^ | Gbmin6b5#13/E:7^^ | x 2) x 2\r\n" + 
+						"  \r\n" + 
+						" [Groove]\r\n" + 
+						" \r\n" + 
+						" 	Uppercase letters == rest, lowercase letters == notes. Possible values are \r\n" + 
+						" [seqhwSEQHW] for sixteenth, eight, quarter, half, and whole respectively. \r\n" + 
+						" Note values can be concatenated, but only of same case. A [:] denotes a\r\n" + 
+						" chord change and should be used accordingly. Repeats work on groove too\r\n" + 
+						" and should be used to match any repeats on chords! \r\n" + 
+						" \r\n" + 
+						"	- (qwwwwwh:q+e+s+eww: x 2) x 2\r\n" + 
+						"  \r\n" + 
+						"Number of chord changes and number of chords must be equal.");
 				if (readMe.isSelected()) {
 					while (scan.hasNextLine()) {
 						save += scan.nextLine() + "\n";
 					}
 					previewCanvas.getGraphicsContext2D().setFont(new Font(
-							GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts()[7].getFontName(), 10));
+							GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts()[7].getFontName(), 12));
 					previewCanvas.getGraphicsContext2D().fillText(save, 2, 12);
 				} else {
 					previewCanvas.getGraphicsContext2D().clearRect(0, 0, previewCanvas.getWidth(),
 							previewCanvas.getHeight());
+					save = "";
 				}
 			}
 		});
 	}
 
 	private void rRhythmListeners() {
+		rRhythmTextArea.textProperty().addListener(new ChangeListener<String>() {
+			@Override
+			public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+				
+			}
+		});
+		
 		rRhythmTextArea.addEventFilter(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
 			@Override
 			public void handle(KeyEvent event) {
@@ -291,9 +316,6 @@ public class JZoddController implements Initializable {
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-
-		lBass.setToggleGroup(tg);
-		rBass.setToggleGroup(tg);
 
 		Console console = new Console(previewCanvas);
 		ps = new PrintStream(console, true);

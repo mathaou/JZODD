@@ -10,53 +10,73 @@ import exceptions.LudicrousTempoException;
 import exceptions.MalformedTimeSignatureException;
 import javafx.stage.FileChooser;
 
+/**
+ * 
+ * @author Matt Farstad
+ * @version 1.0
+ */
 public class MidiBuilder {
 
+	/**
+	 * @param instance Controller instance of object.
+	 */
 	public static MidiBuilder instance = new MidiBuilder();
 
+	/**
+	 * @param interpreter ChordInterpreter object used by MidiBuilder instance.
+	 */
 	private ChordInterpreter interpreter;
 
-	// Standard MIDI file header, for one-track file
-	// 4D, 54... are just magic numbers to identify the
-	// headers
-	// Note that because we're only writing one track, we
-	// can for simplicity combine the file and track headers
+	/**
+	 * @param header Standard midi file header. Single track format.
+	 */
 	private final int header[] = new int[] { 0x4d, 0x54, 0x68, 0x64, 0x00, 0x00, 0x00, 0x06, 0x00, 0x00, // single-track
 																										// format
 			0x00, 0x01, // one track
 			0x00, 0x10, // 16 ticks per quarter
 			0x4d, 0x54, 0x72, 0x6B };
 
-	// Standard footer
+	/** @param footer Standard footer*/
 	private final int footer[] = new int[] { 0x01, 0xFF, 0x2F, 0x00 };
 
-	// A MIDI event to set the tempo
+	/** @param tempoEvent A MIDI event to set the tempo*/
 	private int tempoEvent[] = new int[] { 0x00, 0xFF, 0x51, 0x03, 0x0F, 0x42, 0x40 // Default 1 million usec per
 																							// crotchet
 	};
 
-	// A MIDI event to set the key signature. This is irrelent to
-	// playback, but necessary for editing applications
+	/** @param keySigEvent A MIDI event to set the key signature. This is irrelevant to
+	 playback, but necessary for editing applications*/
 	private final int keySigEvent[] = new int[] { 0x00, 0xFF, 0x59, 0x02, 0x00, // C
 			0x00 // major
 	};
 
-	// A MIDI event to set the time signature. This is irrelent to
-	// playback, but necessary for editing applications
+	/*
+	 * @param timeSigEvent A MIDI event to set the time signature. Irrelevant for playback
+	 * but nice to have for structuring rhythm.
+	 */
 	private int timeSigEvent[] = new int[] { 0x00, 0xFF, 0x58, 0x04, 0x04, // numerator
 			0x02, // denominator (2==4, because it's a power of 2)
 			0x30, // ticks per click (not used)
 			0x08 // 32nd notes per crotchet
 	};
 
+	/**
+	 * @param playEvents Directional collection of int arrays that will be used to generate the file.
+	 */
 	private Vector<int[]> playEvents;
 
+	/**
+	 * Constructor.
+	 */
 	private MidiBuilder() {
 		this.playEvents = new Vector<int[]>();
 		this.interpreter = new ChordInterpreter();
 	}
 
-	//file writing finish
+	/**
+	 * Writes the midi file.
+	 * @throws IOException
+	 */
 	public void writeToFile() throws IOException {
 		
 		FileChooser choose = new FileChooser();
@@ -108,6 +128,11 @@ public class MidiBuilder {
 		}
 	}
 
+	/**
+	 * Converts int array to byte array for writing.
+	 * @param ints array of ints.
+	 * @return byte array.
+	 */
 	protected static byte[] intArrayToByteArray(int[] ints) {
 		int l = ints.length;
 		byte[] out = new byte[ints.length];
@@ -117,7 +142,10 @@ public class MidiBuilder {
 		return out;
 	}
 
-	/** Store a program-change event at current position */
+	/**
+	 * Defines change in program, such as tempo, key, or time signature at current time.
+	 * @param prog change code.
+	 */
 	public void progChange(int prog) {
 		int[] data = new int[3];
 		data[0] = 0;
@@ -126,6 +154,11 @@ public class MidiBuilder {
 		playEvents.add(data);
 	}
 	
+	/**
+	 * Sets tempo.
+	 * @param bpm Beats per minute, as int.
+	 * @throws LudicrousTempoException For tempos that are too slow or too fast, mainly because accounting for those would be annoying but with enough pressure I'll find a way to change it.
+	 */
 	public void setTempo(int bpm) throws LudicrousTempoException{
 		if(bpm < 58 || bpm > 900) {
 			throw new LudicrousTempoException();
@@ -137,7 +170,12 @@ public class MidiBuilder {
 		}
 	}
 	
-	@SuppressWarnings("unused")
+	/**
+	 * Sets time signature for track.
+	 * @param n Numerator.
+	 * @param d Denominator.
+	 * @throws MalformedTimeSignatureException Denominator must be a power of 2.
+	 */
 	public void setTimeSignature(int n, int d) throws MalformedTimeSignatureException{
 		if(d % 2 != 0) {
 			throw new MalformedTimeSignatureException();
@@ -147,14 +185,28 @@ public class MidiBuilder {
 		}
 	}
 	
+	/**
+	 * Log function because Java only supports base 10.
+	 * @param x Number.
+	 * @param base Log base.
+	 * @return result as double.
+	 */
 	public static double log(double x, int base) {
 		return (Math.log(x) / Math.log(base));
 	}	
 		
+	/**
+	 * Gets ChordInterpreter object.
+	 * @return ChordInterpreter object.
+	 */
 	public ChordInterpreter getChordInterpreter() {
 		return this.interpreter;
 	}
 
+	/**
+	 * Gets directional int array collection used for write.
+	 * @return Vector<int[]>.
+	 */
 	public Vector<int[]> getPlayEvents() {
 		return this.playEvents;
 	}

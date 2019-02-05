@@ -10,6 +10,12 @@ import exceptions.FrequencyBoundsViolationException;
 import exceptions.InvalidInversionException;
 import midi.MidiBuilder;
 
+/**
+ * Object that holds all data about a defined chord.
+ * 
+ * @author Matt Farstad
+ * @version 1.0
+ */
 public class Chord {
 
 	/**
@@ -18,6 +24,8 @@ public class Chord {
 	 * @param quality   Major or minor; major used to differentiate the 7ths,
 	 *                  otherwise minor is only true descriptor for augmenting 3rd.
 	 * @param color     Additional extended chord tone, (#|b) (5|9|11|13).
+	 * @param color2	Additional extended chord tone, (#|b) (5|9|11|13).
+	 * @param bass		Defined bass note for left hand, or just root down an octave.
 	 */
 	private String baseChord, root, bass, quality, color, color2;
 
@@ -26,20 +34,26 @@ public class Chord {
 	 * @param octave    Ya know, octave.
 	 * @param inversion Flipping bottom-most note up a certain number of times - 2
 	 *                  max for non-extended chords and 3 for extended chords.
+	 * @param bassTone	midiNumber for bass tone, for ease of programming.
 	 */
 	private int extension, octave, inversion, bassTone;
 
 	/**
-	 * @param degrees Number of whole and half steps for the particular chords home
-	 *                scale.
+	 * @param chordTones	Collection of chord tones as midi numbers.
 	 */
-	private int[] degrees;
+	
 	private ArrayList<Integer> chordTones;
 
-	String[] noteString = new String[] { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
-
+	/**
+	 * Constructor for a chord.
+	 * 
+	 * @param chordData String array of regexed chord data.
+	 */
+	
 	public Chord(String[] chordData) {
 
+		//values set.
+		
 		this.baseChord = chordData[ChordInterpreter.FULLCHORD];
 		this.root = chordData[ChordInterpreter.ROOT];
 		this.quality = (chordData[ChordInterpreter.QUALITY] == null) ? "" : chordData[ChordInterpreter.QUALITY];
@@ -54,6 +68,8 @@ public class Chord {
 
 		this.chordTones = new ArrayList<Integer>();
 
+		//catch invalid inversions for given extension
+		
 		try {
 			if (this.extension == 7 || this.extension == 6) {
 				if (this.inversion > 3) {
@@ -63,12 +79,8 @@ public class Chord {
 				if (this.inversion > 4) {
 					throw new InvalidInversionException();
 				}
-			} else if (this.extension == 11) {
+			} else if (this.extension > 11) {
 				if (this.inversion > 5) {
-					throw new InvalidInversionException();
-				}
-			} else if (this.extension == 13) {
-				if (this.inversion > 6) {
 					throw new InvalidInversionException();
 				}
 			} else {
@@ -76,6 +88,8 @@ public class Chord {
 					throw new InvalidInversionException();
 				}
 			}
+			
+			//make sure that the given notes are valid for midi playback
 
 			if (getNoteHashMap().get(this.root)[this.octave] > getNoteHashMap().get("C")[8]
 					|| getNoteHashMap().get(this.root)[this.octave] < getNoteHashMap().get("A")[0]) {
@@ -85,15 +99,23 @@ public class Chord {
 			e.printStackTrace();
 		}
 
+		//clean stuff up and assemble chord tones
 		assembleTones();
 	}
 
+	/**
+	 * Tones assembled.
+	 */
 	private void assembleTones() {
+		//root processed
 		processRoot();
+		//quality processed
 		processQuality();
+		//extension processed
 		if (this.extension > 0) {
 			processExtension();
 		}
+		//if color exists process
 		if (this.color.trim().length() > 0) {
 			try {
 				processColor(this.color);
@@ -104,16 +126,26 @@ public class Chord {
 				e.printStackTrace();
 			}
 		}
+		
+		//assmble inversions, gets tricky for extended chords. Theory faux pas are avoided such as minor 9th interval between 3rd and 11th.
 		processInversion();
+		
+		//process bass
 		processBass();
 	}
 
+	/*
+	 * Processes root.
+	 */
 	private void processRoot() {
 		int midiNumForRoot = getChordInterpreter()
 				.getMidiNumber(getChordInterpreter().getNoteHashMap().get(this.root)[this.octave]);
 		this.chordTones.add(new Integer(midiNumForRoot));
 	}
 
+	/**
+	 * Processes quality for maj, min, dim, aug, sus...
+	 */
 	private void processQuality() {
 		int root = this.chordTones.get(0);
 		switch (this.quality) {
@@ -162,7 +194,10 @@ public class Chord {
 		}
 	}
 
-	// (6|7|9|11|13)?([#b]?(?:5|9|11|13)?)?
+	/**
+	 * Processes extension.
+	 * (6|7|9|11|13)?([#b]?(?:5|9|11|13)?)?
+	 */
 	private void processExtension() {
 		int root = this.chordTones.get(0);
 		switch (this.extension) {
@@ -194,6 +229,12 @@ public class Chord {
 		}
 	}
 
+	/**
+	 * Processes color.
+	 * 
+	 * @param color Tone to add.
+	 * @throws ColorException If color added creates confusion, such as Ab9b9. If flat 9 desired, then Ab7b9 should be used instead.
+	 */
 	private void processColor(String color) throws ColorException {
 		int modifier = 0;
 		if (color.charAt(0) == '#') {
@@ -234,9 +275,15 @@ public class Chord {
 		}
 	}
 
+	/**
+	 * Rather tricky, since extended chords can be voiced in many different ways. 
+	 * Decided to just remove dissonant intervals and default the voicing to be fairly closed, and then inversions can take care of most of the
+	 * leg work, and then undesired tones can just be removed manually.
+	 */
 	private void processInversion() {
 		switch (this.extension) {
 		case 9:
+			//7th and 9th down an octave
 			this.chordTones.set(3, this.chordTones.get(3) - 12);
 			this.chordTones.set(4, this.chordTones.get(4) - 12);
 			for (int i = 0; i < this.inversion; i++) {
@@ -245,7 +292,9 @@ public class Chord {
 			}
 			break;
 		case 11:
+			//remove 3rd to emphasize 11th (minor 9th is a no no)
 			this.chordTones.remove(2);
+			//9th and 11th down an octave
 			this.chordTones.set(3, this.chordTones.get(3) - 12);
 			this.chordTones.set(4, this.chordTones.get(4) - 12);
 			for (int i = 0; i < this.inversion; i++) {
@@ -254,7 +303,9 @@ public class Chord {
 			}
 			break;
 		case 13:
+			//remove 11th because the textbook told me to
 			this.chordTones.remove(5);
+			//move 7th, 9th, and 13th down an octave.
 			this.chordTones.set(3, this.chordTones.get(3) - 12);
 			this.chordTones.set(4, this.chordTones.get(4) - 12);
 			this.chordTones.set(5, this.chordTones.get(4) - 12);
@@ -264,15 +315,20 @@ public class Chord {
 			}
 			break;
 		default:
+			//continuously flip bottom most chord tone up an octave
 			for (int i = 0; i < this.inversion; i++) {
 				int index = this.chordTones.indexOf(Collections.min(this.chordTones));
 				this.chordTones.set(index, this.chordTones.get(index) + 12);
 			}
 			break;
 		}
+		//sort them in the list
 		Collections.sort(this.chordTones);
 	}
 
+	/**
+	 * Process bass. Root beneath lowest chord tone if not defined by default.
+	 */
 	private void processBass() {
 		double freq;
 
@@ -319,14 +375,28 @@ public class Chord {
 		return this.octave;
 	}
 
+	/**
+	 * toString outputs all information on chord.
+	 */
 	public String toString() {
+		
+		String[] noteString = new String[] { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+		
+		String notes = "";
+		
+		for(Integer i: this.chordTones) {
+			int octave = (i/12) - 1;
+			int noteIndex = (i%12);
+			notes+= String.format("%s%d, ", noteString[noteIndex], octave);
+		}
+		
 		String s;
 		if (this.bass != "") {
-			s = String.format("%s | %s%s%d%s/%s:O%dI%d...", this.baseChord, this.root, this.quality, this.extension,
-					this.color, this.bass, this.octave, this.inversion);
+			s = String.format("%s | %s%s%d%s%s/%s:O%dI%d...%t%n%s%n", this.baseChord, this.root, this.quality, this.extension,
+					this.color, this.color2, this.bass, this.octave, this.inversion, notes);
 		} else {
-			s = String.format("%s | %s%s%d%s:O%dI%d...", this.baseChord, this.root, this.quality, this.extension,
-					this.color, this.octave, this.inversion);
+			s = String.format("%s | %s%s%d%s%s:O%dI%d...%t%n%s%n", this.baseChord, this.root, this.quality, this.extension,
+					this.color, this.color2, this.octave, this.inversion, notes);
 		}
 		return s;
 	}

@@ -6,23 +6,49 @@ import java.util.regex.Pattern;
 
 import midi.MidiBuilder;
 
+/**
+ * Object that holds data for defining MIDI numbers and other necessary music-related data.
+ * 
+ * @author Matt Farstad
+ * @version 1.0
+ *
+ */
 public class ChordInterpreter {
 
+	/**
+	 * Indices for data in chord string array based on regex match order.
+	 */
 	public static final int FULLCHORD = 0, ROOT = 1, QUALITY = 2, EXTENSION = 3, COLOR = 4, COLOR2 = 5,  BASS = 6, OCTAVE = 7, INVERSION = 8;
 	
+	/**
+	 * @param noteValues Frequency definitions for all valid midi notes.
+	 */
 	private HashMap<String, double[]> noteValues;
 	
+	/*
+	 * @param modes Unused for now, but data on interval definitions for modes.
+	 */
 	private HashMap<String, int[]> modes;
 
+	/**
+	 * Constructor. Can have multiple objects, but only one is used by the static instance in the MidiBuilder class.
+	 */
 	public ChordInterpreter() {
 		initializeNoteHashMap();
 		initializeModes();
 	}
 
+	/**
+	 * Organized chord into an array for use in constructor of Chord object.
+	 * @param chord
+	 * @return a String array with data from regex matches.
+	 */
 	public String[] organizeChord(String chord) {
 
+		//blank match array
 		String[] matchArray = new String[] {"", "", "", "", "", "", "", "", ""};
 
+		//builds matches
 		Matcher m = Pattern.compile(
 				"([A-Ga-g][#b]?)(min|maj|aug|dim|sus[24])?(6|7|9|11|13)?([#b]?(?:5|9|11|13)?)?([#b]?(?:5|9|11|13)?)?[\\/]?([A-Ga-g][#b]?)?"
 				+ ":?([0-8])?(\\^*)?")
@@ -37,10 +63,18 @@ public class ChordInterpreter {
 		return matchArray;
 	}
 
+	/**
+	 * Formula to generate midi number from frequency.
+	 * @param freq Note frequency for use in generating midi number.
+	 * @return int as midi number.
+	 */
 	public int getMidiNumber(double freq) {
 		return (int) Math.round((12 * MidiBuilder.log(freq / 440, 2) + 69));
 	}
 
+	/**
+	 * Initializes frequency mappings into hashmap.
+	 */
 	private void initializeNoteHashMap() {
 		this.noteValues = new HashMap<String, double[]>();
 		noteValues.put("C", new double[] { 16.35, 32.70, 65.41, 130.81, 261.63, 523.25, 1046.50, 2093.00, 4186.01 });
@@ -63,6 +97,9 @@ public class ChordInterpreter {
 		noteValues.put("B", new double[] { 30.87, 61.74, 123.47, 246.94, 493.88, 987.77, 1975.53, 3951.07 });
 	}
 	
+	/**
+	 * Initializes modes into hashmap.
+	 */
 	private void initializeModes() {
 		this.modes = new HashMap<String, int[]>();
 		modes.put("Ionian", new int[] {0,2,2,1,2,2,2,1});
@@ -76,10 +113,18 @@ public class ChordInterpreter {
 		modes.put("Locrian", new int[] {0,1,2,2,1,2,2,2});
 	}
 
+	/**
+	 * Gets hashmap of frequencies corresponding to note names.
+	 * @return HashMap<String, double[]> frequency mappings.
+	 */
 	public HashMap<String, double[]> getNoteHashMap() {
 		return this.noteValues;
 	}
 	
+	/*
+	 * Unused for now but gets mode mappings.
+	 * @return HashMap<String, int[]> mode mappings.
+	 */
 	public HashMap<String, int[]> getModes() {
 		return this.modes;
 	}
