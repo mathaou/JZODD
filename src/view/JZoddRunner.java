@@ -16,6 +16,8 @@ import jfxtras.styles.jmetro8.JMetro;
  */
 public class JZoddRunner extends Application{
 
+	private static Stage stage;
+	
 	/**
 	 * Main method to launch application.
 	 * @param args
@@ -46,12 +48,20 @@ public class JZoddRunner extends Application{
 		primaryStage.setMaximized(false);
 		primaryStage.show();
 		
+		primaryStage.setResizable(true);
+		
 		//closes threads and printwriters on exit
 		primaryStage.setOnHiding(event -> {
 			((JZoddController) loader.getController()).getES().shutdown();
 			((JZoddController) loader.getController()).ps.close();
 			System.exit(0);
 		});
+		
+		stage = primaryStage;
 	}
 
+	public static Stage getStage() {
+		return stage;
+	}
+	
 }

@@ -235,7 +235,7 @@ public class Chord {
 	 * @param color Tone to add.
 	 * @throws ColorException If color added creates confusion, such as Ab9b9. If flat 9 desired, then Ab7b9 should be used instead.
 	 */
-	private void processColor(String color) throws ColorException {
+	private void processColor(String color) throws ColorException, NumberFormatException {
 		int modifier = 0;
 		if (color.charAt(0) == '#') {
 			modifier = 1;
@@ -243,35 +243,39 @@ public class Chord {
 			modifier = -1;
 		}
 
-		switch (Integer.parseInt(color.substring(1))) {
-		case 5:
-			this.chordTones.set(2, this.chordTones.get(2) + modifier);
-			break;
-		case 9:
-			if (this.extension == 9) {
-				throw new ColorException();
-			} else if (this.extension < 9) {
-				this.chordTones.add(this.chordTones.get(0) + 14 + modifier);
-			} else if (this.extension > 9 && this.extension <= 13) {
-				this.chordTones.set(4, this.chordTones.get(4) + modifier);
+		try {
+			switch (Integer.parseInt(color.substring(1))) {
+			case 5:
+				this.chordTones.set(2, this.chordTones.get(2) + modifier);
+				break;
+			case 9:
+				if (this.extension == 9) {
+					throw new ColorException();
+				} else if (this.extension < 9) {
+					this.chordTones.add(this.chordTones.get(0) + 14 + modifier);
+				} else if (this.extension > 9 && this.extension <= 13) {
+					this.chordTones.set(4, this.chordTones.get(4) + modifier);
+				}
+				break;
+			case 11:
+				if (this.extension == 11) {
+					throw new ColorException();
+				} else if (this.extension < 11) {
+					this.chordTones.add(this.chordTones.get(0) + 17 + modifier);
+				} else if (this.extension == 13) {
+					this.chordTones.set(5, this.chordTones.get(5) + modifier);
+				}
+				break;
+			case 13:
+				if (this.extension == 13) {
+					throw new ColorException();
+				} else if (this.extension == 7 || this.extension == 9 || this.extension == 11) {
+					this.chordTones.add(this.chordTones.get(0) + 21 + modifier);
+				}
+				break;
 			}
-			break;
-		case 11:
-			if (this.extension == 11) {
-				throw new ColorException();
-			} else if (this.extension < 11) {
-				this.chordTones.add(this.chordTones.get(0) + 17 + modifier);
-			} else if (this.extension == 13) {
-				this.chordTones.set(5, this.chordTones.get(5) + modifier);
-			}
-			break;
-		case 13:
-			if (this.extension == 13) {
-				throw new ColorException();
-			} else if (this.extension == 7 || this.extension == 9 || this.extension == 11) {
-				this.chordTones.add(this.chordTones.get(0) + 21 + modifier);
-			}
-			break;
+		} catch (NumberFormatException e) {
+			
 		}
 	}
 
@@ -373,6 +377,10 @@ public class Chord {
 
 	public int getOctave() {
 		return this.octave;
+	}
+	
+	public String getBaseChord() {
+		return this.baseChord;
 	}
 
 	/**

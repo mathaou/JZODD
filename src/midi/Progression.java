@@ -216,7 +216,7 @@ public class Progression {
 						this.eventQueue.add(a);
 					} else {
 						//else note modifier denotes chord tone to play
-						if(lNum > 0 && lNum < lC.getChordTones().size()) {
+						if(lNum > 0 && lNum <= lC.getChordTones().size()) {
 							int[] a = noteOn(0, lC.getChordTones().get(lNum-1), vel);
 							this.eventQueue.add(a);
 						} else {
@@ -233,7 +233,7 @@ public class Progression {
 				if (rModifier == 1) {
 					//right hand cant be bass
 					//note modifier denotes chord tone to play
-					if(rNum > 0 && rNum < rC.getChordTones().size()) {
+					if(rNum > 0 && rNum <= rC.getChordTones().size()) {
 						int[] a = noteOn(0, rC.getChordTones().get(rNum-1), vel);
 						this.eventQueue.add(a);
 					} else {
@@ -267,7 +267,7 @@ public class Progression {
 						//else voice chord tone
 						//temp needed for note off
 						int temp = t - lpd;
-						if(lNum > 0 && lNum < lC.getChordTones().size()) {
+						if(lNum > 0 && lNum <= lC.getChordTones().size()) {
 							int[] a = noteOff(temp, lC.getChordTones().get(lNum-1));
 							this.eventQueue.add(a);
 						} else {
@@ -328,7 +328,7 @@ public class Progression {
 						this.eventQueue.add(a);
 					} else {
 						//voice specific chord tone
-						if(lNum > 0 && lNum < lC.getChordTones().size()) {
+						if(lNum > 0 && lNum <= lC.getChordTones().size()) {
 							int[] a = noteOn(0, lC.getChordTones().get(lNum-1), vel);
 							this.eventQueue.add(a);
 						} else {
@@ -358,7 +358,7 @@ public class Progression {
 					//temp needed for multiple notes
 					int temp = t - lpd;
 					//note modifier denotes chord tone to play
-					if(rNum > 0 && rNum < rC.getChordTones().size()) {
+					if(rNum > 0 && rNum <= rC.getChordTones().size()) {
 						int[] a = noteOff(temp, rC.getChordTones().get(rNum-1));
 						this.eventQueue.add(a);
 					} else {
@@ -411,7 +411,7 @@ public class Progression {
 					rRest = false;
 				} else {
 					//note modifier denotes chord tone to voice
-					if(rNum > 0 && rNum < rC.getChordTones().size()) {
+					if(rNum > 0 && rNum <= rC.getChordTones().size()) {
 						int[] a = noteOn(0, rC.getChordTones().get(rNum-1), vel);
 						this.eventQueue.add(a);
 					} else {
@@ -455,4 +455,8 @@ public class Progression {
 		return data;
 	}
 
+	public ArrayList<Chord> getProgressionList(){
+		return this.progressionList;
+	}
+	
 }

@@ -12,13 +12,13 @@ String-based MIDI composition written in Java. Modeled after how I personally cr
 
 Properly formatted chords should be separated with a | . Pressing space in JZODD automatically will create a bar for you, unless a repeat (x 2, x 3, etc...) or ) is detected.
 
-Rhtyhms can be [seqhwSEQHW], with lowercase letters representing note values, and uppercase ones representing rests. Letters of same case can be joined with a + so long as total value doesn't equal w+w (currently all note values use bytes, and w+w == 128, which a byte can't hold). Rhythms should use a : to denote a chord change. Number of changes and number of chords must be equal!
+Rhythms can be [seqhwSEQHW], with lowercase letters representing note values, and uppercase ones representing rests. Letters of same case can be joined with a + so long as total value doesn't equal w+w (currently all note values use bytes, and w+w == 128, which a byte can't hold). Rhythms should use a : to denote a chord change. Number of changes and number of chords must be equal!
 
 Chords and rhythm can both be wrapped in parenthesis and repeated, as well as individual lines.
 
 	ex. Ebmaj7/Ab:3^^ | Abmaj7:3 | x 2 (Ebmaj7/Ab:3^^ | Abmaj7:3 | x 2 Cmin7/F:4 | Fmin7:3^^ | x 2) x 2
 		wW:qqQQ: x 2 (eeEeEessSsQq+q:w: x 2 w:w: x 2) x 2
-
+		
 Specific chord tones on the right hand can be voiced with parenthesis after the rhtyhm value. Values over or under the total number of chord tones will default to just the full chord.
 
 	ex. w(1):w(2):w(3): / (lowest note to second lowest to third lowest)
@@ -67,4 +67,4 @@ Octave and inversion ranges from A0 - C8. Outside the range will result in an ex
 
 **FUTURE WORK**
 
-Version 1.0 will have arpeggiate functionality, labels, save files, and visual representions of rhythm and chord changes on the currently underutilized but takes-up-more-than-half-of-the-screen canvas/ error output area.
+Version 1.0 will have arpeggiate functionality, labels, save files, and visual representations of rhythm and chord changes on the currently underutilized but takes-up-more-than-half-of-the-screen canvas/ error output area.
