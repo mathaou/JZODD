@@ -1,10 +1,14 @@
+**LATEST**
+
+Save files and rhtyhm visualization!
+
 <h1>JZODD MIDI BUILDER</h1>
 
 **DESCRIPTION**
 
 String-based MIDI composition written in Java. Modeled after how I personally create music, but there are applications for a lot of people. 
 
-![Application window](https://i.imgur.com/BYyBWWs.png)
+![Application window](https://i.imgur.com/1iMhjSO.png)
 
 <h3>FUNCTIONALITY</h3>
 
@@ -67,4 +71,4 @@ Octave and inversion ranges from A0 - C8. Outside the range will result in an ex
 
 **FUTURE WORK**
 
-Version 1.0 will have arpeggiate functionality, labels, save files, and visual representations of rhythm and chord changes on the currently underutilized but takes-up-more-than-half-of-the-screen canvas/ error output area.
+Arpeggiate and labels!
