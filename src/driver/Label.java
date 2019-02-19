@@ -36,7 +36,7 @@ public class Label implements Serializable {
 	
 	@Override
 	public String toString() {
-		return String.format("%s: {%s}", header, body);
+		return String.format("%s: [%s]", header, body);
 	}
 
 }

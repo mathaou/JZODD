@@ -17,14 +17,17 @@ public class TimeEvent {
 	 */
 	private int num;
 	
+	private int arp;
+	
 	/**
 	 * Constructor.
 	 * @param te 
 	 * @param num
 	 */
-	public TimeEvent(Integer te, int num) {
+	public TimeEvent(Integer te, int num, int arp) {
 		this.te = te;
 		this.num = num;
+		this.arp = arp;
 	}
 	
 	public Integer getTimeEvent() {
@@ -33,6 +36,14 @@ public class TimeEvent {
 	
 	public int getNum() {
 		return this.num;
+	}
+	
+	public int getArp() {
+		return this.arp;
+	}
+	
+	public String toString() {
+		return String.format("%d, %d, %d", te, num, arp);
 	}
 
 }

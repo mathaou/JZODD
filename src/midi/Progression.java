@@ -96,7 +96,7 @@ public class Progression {
 	 * Generates MIDI file.
 	 * @param vel Velocity as an integer.
 	 */
-	public void generateMidi(int vel) {
+	public synchronized void generateMidi(int vel) {
 		//makes sure that groove exists on a hand
 		try {
 			if (this.grooveList[0] == null && this.grooveList[1] == null) {
@@ -127,12 +127,30 @@ public class Progression {
 
 		});
 	}
+	
+	public synchronized void populatePlayEvents(int vel) {
+		try {
+			if (this.grooveList[0] == null && this.grooveList[1] == null) {
+				throw new NoFunkException();
+			}
+		} catch (NoFunkException e) {
+			e.printStackTrace();
+		}
+
+		//creates all events as int arrays
+		processGrooveChannels(this.grooveList[0], this.grooveList[1], vel);
+
+		//writes to vector
+		for (int[] i : this.eventQueue) {
+			MidiBuilder.instance.getPlayEvents().add(i);
+		}
+	}
 
 	/**
 	 * Add groove channel if available and makes sure that number of chord changes == number of chords.
 	 * @param g Groove to add.
 	 */
-	public void addGrooveChannel(Groove g) {
+	public synchronized void addGrooveChannel(Groove g) {
 		int i = 0;
 		for (String s : g.matches) {
 			i += (int) s.chars().filter(p -> p == ':').count();
@@ -163,9 +181,9 @@ public class Progression {
 	 * @param g2 Groove for right hand.
 	 * @param vel Velocity as int.
 	 */
-	public void processGrooveChannels(Groove g1, Groove g2, int vel) {
+	public synchronized void processGrooveChannels(Groove g1, Groove g2, int vel) {
 		//define variables needed
-		int lCount = 0, rCount = 0, lpd = 0, lPeek = 0, rPeek = 0, lSum = 0, rSum = 0, t = 0, lNum = 0, rNum = 0;
+		int lCount = 0, rCount = 0, lpd = 0, lPeek = 0, rPeek = 0, lSum = 0, rSum = 0, t = 0, lNum = 0, rNum = 0, rArp = 0;
 
 		//needed to keep track of rests
 		boolean lRest = true, rRest = true;
@@ -180,6 +198,8 @@ public class Progression {
 			//as well as any note modifications
 			lNum = g1.getTimeEvents().peek().getNum();
 			rNum = g2.getTimeEvents().peek().getNum();
+			
+			rArp = g2.getTimeEvents().peek().getArp();
 
 			//get the modifier in case of rest
 			int lModifier = (lPeek < 0) ? -1 : 1;
@@ -217,12 +237,12 @@ public class Progression {
 					} else {
 						//else note modifier denotes chord tone to play
 						if(lNum > 0 && lNum <= lC.getChordTones().size()) {
-							int[] a = noteOn(0, lC.getChordTones().get(lNum-1), vel);
+							int[] a = noteOn(0, lC.getChordTones().get(lNum-1) - 12, vel);
 							this.eventQueue.add(a);
 						} else {
 							//voice chord
 							for (Integer i : lC.getChordTones()) {
-								int[] a = noteOn(0, i, vel);
+								int[] a = noteOn(0, i - 12, vel);
 								this.eventQueue.add(a);
 							}
 						}
@@ -232,8 +252,27 @@ public class Progression {
 				//same process for right hand
 				if (rModifier == 1) {
 					//right hand cant be bass
-					//note modifier denotes chord tone to play
-					if(rNum > 0 && rNum <= rC.getChordTones().size()) {
+					if(rArp == -1) {
+						int size = rC.getChordTones().size(), help = 0, num = 0, mod = 1, inner = 0, outer = 0;
+						if(size % 2 == 0) {
+							inner = size - 1;
+							outer = size;
+						} else {
+							inner = (size - 1) * 2;
+							outer = size;
+						}
+						
+						int[][] ret = new int[inner][outer];
+						
+						while(help != (outer * (inner))) {
+							ret[help/size][help%size] = num;
+							num += mod;
+							if(num == size - 1 || num == 0) mod *= -1;
+							help++;
+						}
+						int[] a = noteOn(0, rC.getChordTones().get(ret[rNum/size][rNum%size]), vel);
+						this.eventQueue.add(a);
+					} else if(rNum > 0 && rNum <= rC.getChordTones().size()) {
 						int[] a = noteOn(0, rC.getChordTones().get(rNum-1), vel);
 						this.eventQueue.add(a);
 					} else {
@@ -268,12 +307,12 @@ public class Progression {
 						//temp needed for note off
 						int temp = t - lpd;
 						if(lNum > 0 && lNum <= lC.getChordTones().size()) {
-							int[] a = noteOff(temp, lC.getChordTones().get(lNum-1));
+							int[] a = noteOff(temp, lC.getChordTones().get(lNum-1) - 12);
 							this.eventQueue.add(a);
 						} else {
 							//voice chord
 							for (Integer i : lC.getChordTones()) {
-								int[] a = noteOff(temp, i);
+								int[] a = noteOff(temp, i - 12);
 								this.eventQueue.add(a);
 								//successive notes key off of lpd, which is the current note so 0
 								temp = 0;
@@ -329,12 +368,12 @@ public class Progression {
 					} else {
 						//voice specific chord tone
 						if(lNum > 0 && lNum <= lC.getChordTones().size()) {
-							int[] a = noteOn(0, lC.getChordTones().get(lNum-1), vel);
+							int[] a = noteOn(0, lC.getChordTones().get(lNum-1) - 12, vel);
 							this.eventQueue.add(a);
 						} else {
 							//voice chord
 							for (Integer i : lC.getChordTones()) {
-								int[] a = noteOn(0, i, vel);
+								int[] a = noteOn(0, i - 12, vel);
 								this.eventQueue.add(a);
 							}
 						}
@@ -358,7 +397,27 @@ public class Progression {
 					//temp needed for multiple notes
 					int temp = t - lpd;
 					//note modifier denotes chord tone to play
-					if(rNum > 0 && rNum <= rC.getChordTones().size()) {
+					if(rArp == -1) {
+						int size = rC.getChordTones().size(), help = 0, num = 0, mod = 1, inner = 0, outer = 0;
+						if(size % 2 == 0) {
+							inner = size - 1;
+							outer = size;
+						} else {
+							inner = (size - 1) * 2;
+							outer = size;
+						}
+						
+						int[][] ret = new int[inner][outer];
+						
+						while(help != (outer * (inner))) {
+							ret[help/size][help%size] = num;
+							num += mod;
+							if(num == size - 1 || num == 0) mod *= -1;
+							help++;
+						}
+						int[] a = noteOff(temp, rC.getChordTones().get(ret[rNum/size][rNum%size]));
+						this.eventQueue.add(a);
+					} else if(rNum > 0 && rNum <= rC.getChordTones().size()) {
 						int[] a = noteOff(temp, rC.getChordTones().get(rNum-1));
 						this.eventQueue.add(a);
 					} else {
@@ -381,6 +440,8 @@ public class Progression {
 				int temp = g2.getTimeEvents().peek().getTimeEvent();
 				//get next note modifier
 				rNum = g2.getTimeEvents().peek().getNum();
+				
+				rArp = g2.getTimeEvents().peek().getArp();
 
 				if (temp == 0) {
 					//move on to next
@@ -398,6 +459,7 @@ public class Progression {
 					//get next temp and note modifier
 					temp = g2.getTimeEvents().peek().getTimeEvent();
 					rNum = g2.getTimeEvents().peek().getNum();
+					rArp = g2.getTimeEvents().peek().getArp();
 				}
 
 				//get rest
@@ -411,7 +473,27 @@ public class Progression {
 					rRest = false;
 				} else {
 					//note modifier denotes chord tone to voice
-					if(rNum > 0 && rNum <= rC.getChordTones().size()) {
+					if(rArp == -1) {
+						int size = rC.getChordTones().size(), help = 0, num = 0, mod = 1, inner = 0, outer = 0;
+						if(size % 2 == 0) {
+							inner = size - 1;
+							outer = size;
+						} else {
+							inner = (size - 1) * 2;
+							outer = size;
+						}
+						
+						int[][] ret = new int[inner][outer];
+						
+						while(help != (outer * (inner))) {
+							ret[help/size][help%size] = num;
+							num += mod;
+							if(num == size - 1 || num == 0) mod *= -1;
+							help++;
+						}
+						int[] a = noteOn(0, rC.getChordTones().get(ret[rNum/size][rNum%size]), vel);
+						this.eventQueue.add(a);
+					} else if(rNum > 0 && rNum <= rC.getChordTones().size()) {
 						int[] a = noteOn(0, rC.getChordTones().get(rNum-1), vel);
 						this.eventQueue.add(a);
 					} else {
@@ -433,7 +515,7 @@ public class Progression {
 	 * creates a note on event.
 	 * @return int[] noteOn event.
 	 */
-	public static int[] noteOn(int delta, int note, int velocity) {
+	private static int[] noteOn(int delta, int note, int velocity) {
 		int[] data = new int[4];
 		data[0] = delta;
 		data[1] = 0x90;
@@ -446,7 +528,7 @@ public class Progression {
 	 * creates a note off event.
 	 * @return int[] noteOff event.
 	 */
-	public static int[] noteOff(int delta, int note) {
+	private static int[] noteOff(int delta, int note) {
 		int[] data = new int[4];
 		data[0] = delta;
 		data[1] = 0x80;
@@ -458,5 +540,4 @@ public class Progression {
 	public ArrayList<Chord> getProgressionList(){
 		return this.progressionList;
 	}
-	
 }

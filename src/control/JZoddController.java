@@ -16,11 +16,26 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+import javax.sound.midi.Instrument;
+import javax.sound.midi.InvalidMidiDataException;
+import javax.sound.midi.MetaEventListener;
+import javax.sound.midi.MetaMessage;
+import javax.sound.midi.MidiEvent;
+import javax.sound.midi.MidiSystem;
+import javax.sound.midi.MidiUnavailableException;
+import javax.sound.midi.Sequence;
+import javax.sound.midi.Sequencer;
+import javax.sound.midi.ShortMessage;
+import javax.sound.midi.Synthesizer;
+import javax.sound.midi.Track;
 
 import org.apache.commons.io.FileUtils;
 
@@ -29,6 +44,7 @@ import com.sun.javafx.scene.control.skin.TextAreaSkin;
 import driver.Groove;
 import driver.Label;
 import driver.Project;
+import driver.RectanglePairing;
 import driver.TimeEvent;
 import exceptions.LudicrousTempoException;
 import exceptions.MalformedTimeSignatureException;
@@ -38,13 +54,13 @@ import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
-import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Menu;
@@ -53,6 +69,7 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.control.Tooltip;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyCodeCombination;
 import javafx.scene.input.KeyCombination;
@@ -61,6 +78,7 @@ import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
+import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import midi.MidiBuilder;
@@ -95,15 +113,29 @@ public class JZoddController implements Initializable {
 
 	private FileUtils util = new FileUtils();
 
-	private File saveDir = new File("save.tz"), projectDir;
+	private File saveDir = new File("save.tz"), projectDir = null;
 
-	private ArrayList<Label> saves;
+	private ArrayList<Label> saves = new ArrayList<Label>();
+	
+	private ArrayList<RectanglePairing<Color, Rectangle>> tooltips = new ArrayList<RectanglePairing<Color, Rectangle>>();
+
+	private Sequencer midi;
+	
+	private Synthesizer synth;
+	
+	private int instrument = 0;
 
 	/*
 	 * CALLED BEFORE INITIALIZE AND INJECTION
 	 */
 
 	public JZoddController() {
+		try {
+			this.midi = MidiSystem.getSequencer();
+			this.synth = MidiSystem.getSynthesizer();
+		} catch (MidiUnavailableException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/*
@@ -114,10 +146,10 @@ public class JZoddController implements Initializable {
 	private TextField bpmTextField, velocityTextField, num, den;
 
 	@FXML
-	private Button generateMidiButton, saveLabel;
+	private Button generateMidiButton, saveLabel, delete;
 
 	@FXML
-	private ToggleButton readMe;
+	private ToggleButton readMe, loop;
 
 	@FXML
 	private TextArea lRhythmTextArea, rRhythmTextArea, chordsTextArea, labelEditor;
@@ -135,17 +167,20 @@ public class JZoddController implements Initializable {
 	private VBox sidebar;
 
 	@FXML
-	private ComboBox<String> labelChooser;
+	private ComboBox<String> labelChooser, instrumentBox;
 
 	@FXML
 	private Menu file, help;
+
+	@FXML
+	private javafx.scene.control.Label chordsLabel, rRhythmLabel, lRhythmLabel;
 
 	/*
 	 * INJECTED METHODS
 	 */
 
 	@FXML
-	private void generateMidi() {
+	private synchronized void generateMidi() {
 
 		MidiBuilder.instance.getPlayEvents().clear();
 
@@ -154,34 +189,7 @@ public class JZoddController implements Initializable {
 		s.execute(new Runnable() {
 			@Override
 			public void run() {
-				String chords = chordsTextArea.getText();
-				String lRhythm = lRhythmTextArea.getText();
-				String rRhythm = rRhythmTextArea.getText();
-
-				chords = generateDuplicates(chords);
-
-				lRhythm = generateDuplicates(lRhythm);
-				rRhythm = generateDuplicates(rRhythm);
-
-				Progression p = new Progression(chords);
-
-				Groove g1 = new Groove(lBass.isSelected(), lRhythm);
-				Groove g2 = new Groove(false, rRhythm);
-
-				p.addGrooveChannel(g1);
-				p.addGrooveChannel(g2);
-
-				try {
-					MidiBuilder.instance.setTempo(Integer.parseInt(bpmTextField.getText()));
-					MidiBuilder.instance.setTimeSignature(Integer.parseInt(num.getText()),
-							Integer.parseInt(den.getText()));
-				} catch (NumberFormatException e) {
-					e.printStackTrace();
-				} catch (LudicrousTempoException e) {
-					e.printStackTrace();
-				} catch (MalformedTimeSignatureException e) {
-					e.printStackTrace();
-				}
+				Progression p = assembleProgression();
 
 				p.generateMidi(Integer.parseInt(velocityTextField.getText()));
 			}
@@ -191,8 +199,36 @@ public class JZoddController implements Initializable {
 	}
 
 	@FXML
-	private void readMeDisplay() {
+	private synchronized void deleteLabel() {
+		String l = labelChooser.getValue();
+		Label label = getLabelForKey(l);
+		Platform.runLater(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					saves.remove(label);
 
+					FileOutputStream fs = new FileOutputStream(saveDir);
+					ObjectOutputStream os = new ObjectOutputStream(fs);
+
+					os.writeObject(saves);
+
+					fs.close();
+					os.close();
+
+					populateComboBox();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+		});
+	}
+
+	@FXML
+	private void readMeDisplay() {
 		if (readMe.isSelected()) {
 			root.getScene().getWindow().setWidth(1250);
 			sidebar.setManaged(true);
@@ -206,16 +242,19 @@ public class JZoddController implements Initializable {
 
 	@FXML
 	private void comboAction(ActionEvent e) {
-		Label l = getLabelForKey(labelChooser.getValue());
+		try {
+			Label l = getLabelForKey(labelChooser.getValue());
+			labelEditor.setText(l.toString());
+		} catch (Exception n) {
 
-		labelEditor.setText(l.toString());
+		}
 	}
 
 	@FXML
-	private void save() {
+	private synchronized void save() {
 		String temp = labelEditor.getText();
 
-		Matcher labels = Pattern.compile("\\w*:\\s?[^\\}]*\\}").matcher(temp);
+		Matcher labels = Pattern.compile("\\w*:\\s?[^\\]]*\\]").matcher(temp);
 
 		while (labels.find()) {
 			Matcher match = Pattern.compile("\\w*(?=:)").matcher(labels.group(0).trim());
@@ -224,11 +263,11 @@ public class JZoddController implements Initializable {
 
 			String header = match.group(0);
 
-			match = Pattern.compile("\\{[^\\}]*\\}").matcher(labels.group(0).trim());
+			match = Pattern.compile("\\[[^\\]]*\\]").matcher(labels.group(0).trim());
 
 			match.find();
 
-			String body = match.group(0).replaceAll("\\{|\\}", "");
+			String body = match.group(0).replaceAll("\\[|\\]", "");
 
 			Label save = new Label(header, body);
 
@@ -236,21 +275,20 @@ public class JZoddController implements Initializable {
 				@Override
 				public void run() {
 					try {
-						if (saveDir.isFile()) {
-							FileInputStream fi = new FileInputStream(saveDir);
-							ObjectInputStream oi = new ObjectInputStream(fi);
+						Label temp = null;
 
-							saves = (ArrayList<Label>) oi.readObject();
-
+						if (saves != null) {
 							for (Label l : saves) {
-								System.out.println(l.toString());
+								if (l.getHeader().equals(save.getHeader())) {
+									temp = new Label(l.getHeader(), l.getBody());
+								}
 							}
 
-							fi.close();
-							oi.close();
-						}
-
-						if (saves == null) {
+							if (temp != null) {
+								final String t = temp.getHeader();
+								saves.removeIf(m -> m.getHeader() == t);
+							}
+						} else {
 							saves = new ArrayList<Label>();
 						}
 
@@ -268,8 +306,6 @@ public class JZoddController implements Initializable {
 					} catch (FileNotFoundException e) {
 						e.printStackTrace();
 					} catch (IOException e) {
-						e.printStackTrace();
-					} catch (ClassNotFoundException e) {
 						e.printStackTrace();
 					}
 				}
@@ -297,7 +333,7 @@ public class JZoddController implements Initializable {
 	}
 
 	@FXML
-	private void saveProject() {
+	private synchronized void saveProject() {
 		projectDir = selectSaveFile();
 		Project p = new Project(chordsTextArea.getText(), lRhythmTextArea.getText(), rRhythmTextArea.getText());
 		try {
@@ -308,14 +344,14 @@ public class JZoddController implements Initializable {
 
 			fs.close();
 			os.close();
-			
+
 			JZoddRunner.getStage().setTitle(String.format("JZODD [%s] | MIDI Builder", projectDir.getName()));
 		} catch (Exception e) {
 		}
 	}
 
 	@FXML
-	private void openProject() {
+	private synchronized void openProject() {
 		File o = selectOpenFile();
 		projectDir = o;
 		try {
@@ -331,7 +367,7 @@ public class JZoddController implements Initializable {
 
 				fi.close();
 				oi.close();
-				
+
 				JZoddRunner.getStage().setTitle(String.format("JZODD [%s] | MIDI Builder", o.getName()));
 			}
 		} catch (Exception e) {
@@ -339,38 +375,141 @@ public class JZoddController implements Initializable {
 		}
 	}
 
+	@FXML
+	private synchronized void playback() {
+		if (loop.isSelected()) {
+			MidiBuilder.instance.getPlayEvents().clear();
+
+			try {
+				File temp = File.createTempFile("plbk", ".mid", null);
+				FileOutputStream fos = new FileOutputStream(temp);
+				e.execute(new Runnable() {
+					@Override
+					public void run() {
+						Progression p = assembleProgression();
+						MidiBuilder.instance.progChange(instrument);
+						p.populatePlayEvents(Integer.parseInt(velocityTextField.getText()));
+						try {
+							MidiBuilder.instance.writeWithOutputStream(fos);
+							Sequence s = MidiSystem.getSequence(temp);
+
+							Track t = s.createTrack();
+
+							ShortMessage sm = new ShortMessage();
+
+							sm.setMessage(ShortMessage.PROGRAM_CHANGE, 0, instrument, 0);
+
+							t.add(new MidiEvent(sm, 0));
+							
+							midi.open();
+
+							midi.addMetaEventListener(new MetaEventListener() {
+								@Override
+								public void meta(MetaMessage meta) {
+									if (meta.getType() == 0X2F) {
+										midi.setTickPosition(0);
+										midi.setTempoInBPM(MidiBuilder.instance.tempo);
+										midi.start();
+									}
+								}
+							});
+
+							midi.setSequence(s);
+							midi.setTempoInBPM(MidiBuilder.instance.tempo);
+							midi.start();
+						} catch (IOException e) {
+							e.printStackTrace();
+						} catch (MidiUnavailableException e) {
+							e.printStackTrace();
+						} catch (InvalidMidiDataException e) {
+							e.printStackTrace();
+						}
+					}
+				});
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		} else {
+			this.midi.stop();
+		}
+	}
+	
+	@FXML
+	private void changeInstrument(ActionEvent e) {
+		instrument = this.instrumentBox.getItems().indexOf(this.instrumentBox.getValue());
+	}
+
 	/*
 	 * HELPER METHODS
 	 */
-	
-	private void macroSave() {
-		Project p = new Project(chordsTextArea.getText(), lRhythmTextArea.getText(), rRhythmTextArea.getText());
+
+	private synchronized Progression assembleProgression() {
+		String chords = chordsTextArea.getText();
+		String lRhythm = lRhythmTextArea.getText();
+		String rRhythm = rRhythmTextArea.getText();
+
+		chords = handleLabels(chords);
+		lRhythm = handleLabels(lRhythm);
+		rRhythm = handleLabels(rRhythm);
+
+		chords = generateDuplicates(chords);
+		lRhythm = generateDuplicates(lRhythm);
+		rRhythm = generateDuplicates(rRhythm);
+
+		Progression p = new Progression(chords);
+
+		Groove g1 = new Groove(lBass.isSelected(), lRhythm);
+		Groove g2 = new Groove(false, rRhythm);
+
+		p.addGrooveChannel(g1);
+		p.addGrooveChannel(g2);
+
 		try {
-			FileOutputStream fs = new FileOutputStream(projectDir);
-			ObjectOutputStream os = new ObjectOutputStream(fs);
+			MidiBuilder.instance.setTempo(Integer.parseInt(bpmTextField.getText()));
+			MidiBuilder.instance.setTimeSignature(Integer.parseInt(num.getText()), Integer.parseInt(den.getText()));
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		} catch (LudicrousTempoException e) {
+			e.printStackTrace();
+		} catch (MalformedTimeSignatureException e) {
+			e.printStackTrace();
+		}
 
-			os.writeObject(p);
+		return p;
+	}
 
-			fs.close();
-			os.close();
-			/*
-			DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
-			Calendar cal = Calendar.getInstance();
-			
-			KeyFrame a = new KeyFrame(Duration.seconds(3), evt -> JZoddRunner.getStage().setTitle(String.format("Saved %s at %s", projectDir.getName(), dateFormat.format(cal.getTime()))));
-			KeyFrame b = new KeyFrame(Duration.seconds(0), evt -> JZoddRunner.getStage().setTitle(String.format("JZODD [%s] | MIDI Builder", projectDir.getName())));
-			
-			Timeline line = new Timeline(a,b);
-			
-			line.setCycleCount(0);
+	private synchronized void macroSave() {
+		if (projectDir != null) {
+			Project p = new Project(chordsTextArea.getText(), lRhythmTextArea.getText(), rRhythmTextArea.getText());
+			try {
+				FileOutputStream fs = new FileOutputStream(projectDir);
+				ObjectOutputStream os = new ObjectOutputStream(fs);
 
-			e.execute(new Runnable() {
-				@Override
-				public void run() {
-					line.play();
-				}
-			});*/
-		} catch (Exception e) {
+				os.writeObject(p);
+
+				fs.close();
+				os.close();
+
+				DateFormat dateFormat = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+				Calendar cal = Calendar.getInstance();
+
+				KeyFrame a = new KeyFrame(Duration.seconds(0), evt -> JZoddRunner.getStage().setTitle(
+						String.format("Saved %s at %s", projectDir.getName(), dateFormat.format(cal.getTime()))));
+				KeyFrame b = new KeyFrame(Duration.seconds(3), evt -> JZoddRunner.getStage()
+						.setTitle(String.format("JZODD [%s] | MIDI Builder", projectDir.getName())));
+
+				Timeline line = new Timeline(a, b);
+
+				line.setCycleCount(0);
+
+				e.execute(new Runnable() {
+					@Override
+					public void run() {
+						line.play();
+					}
+				});
+			} catch (Exception e) {
+			}
 		}
 	}
 
@@ -398,8 +537,8 @@ public class JZoddController implements Initializable {
 		return f;
 	}
 
-	private void populateComboBox() {
-		e.execute(new Runnable() {
+	private synchronized void populateComboBox() {
+		Platform.runLater(new Runnable() {
 			@Override
 			public void run() {
 				try {
@@ -414,7 +553,9 @@ public class JZoddController implements Initializable {
 							temp.add(l.getHeader());
 						}
 
-						labelChooser.setItems(FXCollections.observableArrayList(temp));
+						List<String> t = temp.stream().distinct().collect(Collectors.toList());
+
+						labelChooser.setItems(FXCollections.observableArrayList(t));
 
 						fi.close();
 						oi.close();
@@ -428,33 +569,28 @@ public class JZoddController implements Initializable {
 	}
 
 	private Label getLabelForKey(String key) {
-		try {
-			if (saveDir.isFile()) {
-				FileInputStream fi = new FileInputStream(saveDir);
-				ObjectInputStream oi = new ObjectInputStream(fi);
-
-				saves = (ArrayList<Label>) oi.readObject();
-
-				for (Label l : saves) {
-					if (key.equals(l.getHeader())) {
-						return l;
-					}
+		if (saveDir.isFile()) {
+			for (Label l : saves) {
+				if (key.equals(l.getHeader())) {
+					return l;
 				}
-
-				fi.close();
-				oi.close();
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
 		}
 
 		return null;
 	}
 
-	private void drawRectangle(GraphicsContext gc, Rectangle rect, Color c) {
-		gc.setFill(c);
-		gc.strokeRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
-		gc.fillRect(rect.getX(), rect.getY(), rect.getWidth(), rect.getHeight());
+	private String handleLabels(String s) {
+		StringBuilder b = new StringBuilder(s);
+
+		for (Label l : saves) {
+			while (b.indexOf(l.getHeader()) != -1) {
+				b.replace(b.indexOf(l.getHeader()), b.indexOf(l.getHeader()) + l.getHeader().length(),
+						l.getBody().replaceAll("\n|\t", ""));
+			}
+		}
+
+		return b.toString();
 	}
 
 	private String generateDuplicates(String s) {
@@ -463,25 +599,24 @@ public class JZoddController implements Initializable {
 		dupe(sb, "\\(([^\\)]+)\\)\\s*[xX]\\s*(\\d*)", s);
 		dupe(sb, "(.*)\\s*[xX]\\s*(\\d*)", sb.toString());
 
-		return sb.toString();
+		return sb.toString().replaceAll(":\\)", ":");
 	}
 
-	private void dupe(StringBuilder sb, String reg, String s) {
+	private synchronized void dupe(StringBuilder sb, String reg, String s) {
 		String temp = "";
 
 		Matcher group = Pattern.compile(reg).matcher(s);
 
 		while (group.find()) {
 			try {
+				String clean = group.group(1);
+				toomuch:
 				for (int i = 0; i < Integer.parseInt(group.group(2)); i++) {
-					String clean = group.group(1);
-					if (clean.charAt(0) == '(') {
-						clean = clean.substring(1);
+					if(Integer.parseInt(group.group(2)) < 500) {
+						temp += clean + "\n";
+					} else {
+						break toomuch;
 					}
-					if (clean.charAt(clean.length() - 1) == ')') {
-						clean = clean.substring(0, clean.length() - 1);
-					}
-					temp += clean + "\n";
 				}
 				int start = sb.indexOf(group.group(0));
 				sb.replace(start, group.group(0).length() + start, temp);
@@ -494,11 +629,32 @@ public class JZoddController implements Initializable {
 
 	private void updateCanvas() {
 		previewCanvas.getGraphicsContext2D().clearRect(0, 0, previewCanvas.getWidth(), previewCanvas.getHeight());
+		this.tooltips.clear();
 
-		String chords = generateDuplicates(chordsTextArea.getText());
+		String chords = chordsTextArea.getText();
+		String rRhythm = rRhythmTextArea.getText();
+		String lRhythm = lRhythmTextArea.getText();
 
-		String rRhythm = generateDuplicates(rRhythmTextArea.getText());
-		String lRhythm = generateDuplicates(lRhythmTextArea.getText());
+		chords = handleLabels(chords);
+		lRhythm = handleLabels(lRhythm);
+		rRhythm = handleLabels(rRhythm);
+
+		chords = generateDuplicates(chords);
+		rRhythm = generateDuplicates(rRhythm);
+		lRhythm = generateDuplicates(lRhythm);
+
+		int numChords = (int) chords.chars().filter(m -> m == '|').count();
+		int numChangesR = (int) rRhythm.chars().filter(m -> m == ':').count();
+		int numChangesL = (int) lRhythm.chars().filter(m -> m == ':').count();
+
+		chordsLabel.setText(
+				String.format("%s (%d)", chordsLabel.getText().replaceAll("\\(\\d*\\)", "").trim(), numChords));
+
+		rRhythmLabel.setText(
+				String.format("%s (%d)", rRhythmLabel.getText().replaceAll("\\(\\d*\\)", "").trim(), numChangesR));
+
+		lRhythmLabel.setText(
+				String.format("%s (%d)", lRhythmLabel.getText().replaceAll("\\(\\d*\\)", "").trim(), numChangesL));
 
 		Progression p = new Progression(chords);
 		Groove rGroove = new Groove(false, rRhythm);
@@ -532,23 +688,28 @@ public class JZoddController implements Initializable {
 			setLY(50);
 		}
 
-		handleCanvasForHand(Color.web("#58A557"), Color.TRANSPARENT, Color.BLACK, lGroove, lSum, lY, var, lCount, p,
-				skip, noText);
-		handleCanvasForHand(Color.web("#B93D47"), Color.TRANSPARENT, Color.BLACK, rGroove, rSum, rY, var, rCount, p,
-				skip, noText);
+		if(numChords < 500 && numChangesL < 500 && numChangesR < 500) {
+			handleCanvasForHand(Color.web("#58A557"), Color.TRANSPARENT, Color.BLACK, lGroove, lSum, lY, var, lCount, p,
+					skip, noText);
+			handleCanvasForHand(Color.web("#B93D47"), Color.TRANSPARENT, Color.BLACK, rGroove, rSum, rY, var, rCount, p,
+					skip, noText);
+		}
 	}
 
 	private void handleCanvasForHand(Color note, Color rest, Color text, Groove rGroove, int rSum, int rY, int var,
 			int rCount, Progression p, int skip, boolean noText) {
+
 		for (TimeEvent i : rGroove.getTimeEvents()) {
 
 			int mod = (i.getTimeEvent() < 0) ? -1 : 1;
 
 			int temp = i.getTimeEvent() * mod;
 
+			Rectangle r;
+
 			if (temp == 0) {
-				Rectangle r = new Rectangle(5 + rSum, 20 + rY, 5, var);
-				drawRectangle(previewCanvas.getGraphicsContext2D(), r, Color.GREY);
+				r = new Rectangle(5 + rSum, 20 + rY, 5, var);
+				tooltips.add(new RectanglePairing<Color, Rectangle>(Color.GREY, r));
 				rCount++;
 			} else {
 
@@ -557,71 +718,91 @@ public class JZoddController implements Initializable {
 					rY += skip;
 				}
 
-				Rectangle r = new Rectangle(10 + rSum, 20 + rY, temp, var);
-
-				if (mod > 0) {
-					drawRectangle(previewCanvas.getGraphicsContext2D(), r, note);
-				} else {
-					drawRectangle(previewCanvas.getGraphicsContext2D(), r, rest);
-				}
+				r = new Rectangle(10 + rSum, 20 + rY, temp, var);
 
 				if (!noText) {
 					previewCanvas.getGraphicsContext2D().setFill(Color.BLACK);
-					previewCanvas.getGraphicsContext2D().fillText(temp + "", 5 + rSum, 15 + rY);
+					previewCanvas.getGraphicsContext2D().setFont(new Font("SBT-NewCinemaA Std D", 8));
+					if(i.getNum() != 0 && i.getArp() == 0) {
+						previewCanvas.getGraphicsContext2D().fillText(temp + " + " + i.getNum(), 5 + rSum, 15 + rY);
+					} else {
+						previewCanvas.getGraphicsContext2D().fillText(temp + "", 5 + rSum, 15 + rY);
+					}
 				}
+
 				if (rCount == -1) {
 					rCount++;
 					if (p.getProgressionList().size() > 0 && rCount < p.getProgressionList().size()) {
-						String t = "";
-						if (temp > Groove.HALF) {
-							if (p.getProgressionList().get(rCount).getBaseChord().length() > 6) {
-								t = p.getProgressionList().get(rCount).getBaseChord().substring(0, 6) + "...";
-							} else {
-								t = p.getProgressionList().get(rCount).getBaseChord();
-							}
-						} else if (temp == Groove.HALF) {
-							if (p.getProgressionList().get(rCount).getBaseChord().length() > 3) {
-								t = p.getProgressionList().get(rCount).getRoot() + "...";
-							} else {
-								t = p.getProgressionList().get(rCount).getRoot();
-							}
-						} else {
-
-						}
+						String t = p.getProgressionList().get(rCount).getBaseChord();
 
 						if (!noText) {
-							previewCanvas.getGraphicsContext2D().setFill(text);
-							previewCanvas.getGraphicsContext2D().fillText(t, 20 + rSum, 15 + rY);
+							Tooltip chord = new Tooltip(t);
+							r.getProperties().put("tooltip", chord);
+							Tooltip.install(r, chord);
 						}
 					}
 				} else {
 					if (p.getProgressionList().size() > 0 && rCount < p.getProgressionList().size()) {
-						String t = "";
-						if (temp > Groove.HALF) {
-							if (p.getProgressionList().get(rCount).getBaseChord().length() > 6) {
-								t = p.getProgressionList().get(rCount).getBaseChord().substring(0, 6) + "...";
-							} else {
-								t = p.getProgressionList().get(rCount).getBaseChord();
-							}
-						} else if (temp == Groove.HALF) {
-							if (p.getProgressionList().get(rCount).getBaseChord().length() > 3) {
-								t = p.getProgressionList().get(rCount).getRoot() + "...";
-							} else {
-								t = p.getProgressionList().get(rCount).getRoot();
-							}
-						} else {
-
-						}
+						String t = p.getProgressionList().get(rCount).getBaseChord();
 
 						if (!noText) {
-							previewCanvas.getGraphicsContext2D().setFill(text);
-							previewCanvas.getGraphicsContext2D().fillText(t, 20 + rSum, 15 + rY);
+							Tooltip chord = new Tooltip(t);
+							r.getProperties().put("tooltip", chord);
+							Tooltip.install(r, chord);
 						}
 					}
+				}
+
+				if (mod > 0) {
+					tooltips.add(new RectanglePairing<Color, Rectangle>(note, r));
+				} else {
+					tooltips.add(new RectanglePairing<Color, Rectangle>(rest, r));
 				}
 			}
 			rSum += temp;
 		}
+
+		Platform.runLater(new Runnable() {
+			@Override
+			public void run() {
+				drawRectangle(previewCanvas, tooltips);
+			}
+		});
+	}
+
+	private void drawRectangle(Canvas canvas, ArrayList<RectanglePairing<Color, Rectangle>> rect) {
+		Tooltip tool = new Tooltip();
+		Tooltip.install(canvas, tool);
+		tool.hide();
+		rect.forEach(r -> {
+			canvas.getGraphicsContext2D().setFill(r.getC());
+			canvas.getGraphicsContext2D().setLineWidth(.5f);
+			canvas.getGraphicsContext2D().fillRect(r.getR().getX(), r.getR().getY(), r.getR().getWidth(),
+					r.getR().getHeight());
+			canvas.getGraphicsContext2D().strokeRect(r.getR().getX(), r.getR().getY(), r.getR().getWidth(),
+					r.getR().getHeight());
+		});
+
+		canvas.setOnMouseMoved(e -> {
+			rect.forEach(r -> {
+				if (r.getR().contains(e.getX(), e.getY())) {
+					if (r.getR().getProperties().containsKey("tooltip")) {
+						tool.setAnchorX(e.getScreenX());
+						tool.setAnchorY(e.getScreenY() + 15);
+						Tooltip temp = (Tooltip) r.getR().getProperties().get("tooltip");
+						if(temp.getText().trim().length() > 0) {
+							tool.setText(temp.getText());
+						}
+					}
+				} else {
+					tool.hide();
+				}
+			});
+		});
+
+		canvas.setOnMouseExited(e -> {
+			tool.hide();
+		});
 	}
 
 	/*
@@ -806,6 +987,25 @@ public class JZoddController implements Initializable {
 			}
 		});
 	}
+	
+	private void populateInstruments() {
+		try {
+			this.synth.open();
+			Instrument[] orchestra = this.synth.getAvailableInstruments();
+			for(int i = 0; i <= 127; i++) {
+				Matcher m = Pattern.compile(": (.*) bank").matcher(orchestra[i].toString());
+				String s = "";
+				while(m.find()) {
+					s += m.group(1);
+				}
+				this.instrumentBox.getItems().add(String.format("%d: %s", i, s));
+			}
+		} catch (MidiUnavailableException e) {
+			e.printStackTrace();
+		}
+		
+		this.synth.close();
+	}
 
 	/*
 	 * CALLED AFTER INJECTION
@@ -819,9 +1019,10 @@ public class JZoddController implements Initializable {
 
 		Console console = new Console(previewCanvas);
 		ps = new PrintStream(console, true);
-		//System.setErr(ps);
+		System.setErr(ps);
 
 		populateComboBox();
+		populateInstruments();
 
 		Runnable r = new Runnable() {
 			@Override
@@ -836,15 +1037,17 @@ public class JZoddController implements Initializable {
 				chordsListeners();
 
 				checkNums();
-				
+
 				root.getScene().addEventFilter(KeyEvent.KEY_PRESSED, new EventHandler<KeyEvent>() {
 					final KeyCombination s = new KeyCodeCombination(KeyCode.S, KeyCombination.CONTROL_ANY);
+
 					@Override
 					public void handle(KeyEvent arg0) {
-						if(s.match(arg0)) {
+						if (s.match(arg0)) {
 							macroSave();
 						}
-					}});
+					}
+				});
 			}
 		};
 
@@ -880,6 +1083,7 @@ public class JZoddController implements Initializable {
 			if (out.toString().length() <= 200 && t) {
 				out.append(String.valueOf((char) i));
 			}
+
 			if (out.toString().length() > 200 && t) {
 				String sub = out.toString().substring(0, out.toString().indexOf("at "));
 				out.delete(sub.length(), out.length());
@@ -890,6 +1094,7 @@ public class JZoddController implements Initializable {
 				}
 				t = false;
 			}
+
 			if (!t) {
 				previewCanvas.getGraphicsContext2D().clearRect(0, 0, previewCanvas.getWidth(),
 						previewCanvas.getHeight());

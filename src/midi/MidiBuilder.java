@@ -17,6 +17,8 @@ import javafx.stage.FileChooser;
  */
 public class MidiBuilder {
 
+	public int tempo;
+	
 	/**
 	 * @param instance Controller instance of object.
 	 */
@@ -90,42 +92,50 @@ public class MidiBuilder {
 		if(f != null) {
 			FileOutputStream fos = new FileOutputStream(f);
 			
-			fos.write(intArrayToByteArray(header));
-
-			// Calculate the amount of track data
-			// _Do_ include the footer but _do not_ include the
-			// track header
-
-			int size = tempoEvent.length + keySigEvent.length + timeSigEvent.length + footer.length;
-
-			for (int i = 0; i < playEvents.size(); i++)
-				size += playEvents.elementAt(i).length;
-
-			// Write out the track data size in big-endian format
-			// Note that this math is only valid for up to 64k of data
-			// (but that's a lot of notes)
-			int high = size / 256;
-			int low = size - (high * 256);
-			fos.write((byte) 0);
-			fos.write((byte) 0);
-			fos.write((byte) high);
-			fos.write((byte) low);
-
-			// Write the standard metadata — tempo, etc
-			// At present, tempo is stuck at crotchet=60
-			fos.write(intArrayToByteArray(tempoEvent));
-			fos.write(intArrayToByteArray(keySigEvent));
-			fos.write(intArrayToByteArray(timeSigEvent));
-
-			// Write out the note, etc., events
-			for (int i = 0; i < playEvents.size(); i++) {
-				fos.write(intArrayToByteArray(playEvents.elementAt(i)));
+			try {
+				writeWithOutputStream(fos);
+			} catch (IOException e) {
+				e.printStackTrace();
 			}
-
-			// Write the footer and close
-			fos.write(intArrayToByteArray(footer));
-			fos.close();
 		}
+	}
+	
+	public void writeWithOutputStream(FileOutputStream fos) throws IOException {
+		fos.write(intArrayToByteArray(header));
+
+		// Calculate the amount of track data
+		// _Do_ include the footer but _do not_ include the
+		// track header
+
+		int size = tempoEvent.length + keySigEvent.length + timeSigEvent.length + footer.length;
+
+		for (int i = 0; i < playEvents.size(); i++)
+			size += playEvents.elementAt(i).length;
+
+		// Write out the track data size in big-endian format
+		// Note that this math is only valid for up to 64k of data
+		// (but that's a lot of notes)
+		int high = size / 256;
+		int low = size - (high * 256);
+		fos.write((byte) 0);
+		fos.write((byte) 0);
+		fos.write((byte) high);
+		fos.write((byte) low);
+
+		// Write the standard metadata — tempo, etc
+		// At present, tempo is stuck at crotchet=60
+		fos.write(intArrayToByteArray(tempoEvent));
+		fos.write(intArrayToByteArray(keySigEvent));
+		fos.write(intArrayToByteArray(timeSigEvent));
+
+		// Write out the note, etc., events
+		for (int i = 0; i < playEvents.size(); i++) {
+			fos.write(intArrayToByteArray(playEvents.elementAt(i)));
+		}
+
+		// Write the footer and close
+		fos.write(intArrayToByteArray(footer));
+		fos.close();
 	}
 
 	/**
@@ -167,6 +177,7 @@ public class MidiBuilder {
 			instance.tempoEvent[4] = Integer.decode("0X0"+temp.charAt(0));
 			instance.tempoEvent[5] = Integer.decode("0X"+temp.charAt(1) + "" + temp.charAt(2));
 			instance.tempoEvent[6] = Integer.decode("0X"+temp.charAt(3) + "" + temp.charAt(4));
+			this.tempo = bpm;
 		}
 	}
 	

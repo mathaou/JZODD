@@ -1,6 +1,6 @@
 **LATEST**
 
-Save files and rhtyhm visualization!
+Arpeggiate functionlity, note modifications, save files, labels, and loop playback.
 
 <h1>JZODD MIDI BUILDER</h1>
 
@@ -8,9 +8,13 @@ Save files and rhtyhm visualization!
 
 String-based MIDI composition written in Java. Modeled after how I personally create music, but there are applications for a lot of people. 
 
-![Application window](https://i.imgur.com/1iMhjSO.png)
+![Application window](https://i.imgur.com/AhtcT1R.png)
 
 <h3>FUNCTIONALITY</h3>
+
+**SAVE PROJECT**
+
+Projects can be saved and opened again from the midi builder. These files have the .jzp file extension.
 
 **FORMAT**
 
@@ -23,19 +27,23 @@ Chords and rhythm can both be wrapped in parenthesis and repeated, as well as in
 	ex. Ebmaj7/Ab:3^^ | Abmaj7:3 | x 2 (Ebmaj7/Ab:3^^ | Abmaj7:3 | x 2 Cmin7/F:4 | Fmin7:3^^ | x 2) x 2
 		wW:qqQQ: x 2 (eeEeEessSsQq+q:w: x 2 w:w: x 2) x 2
 		
-Specific chord tones on the right hand can be voiced with parenthesis after the rhtyhm value. Values over or under the total number of chord tones will default to just the full chord.
+Specific chord tones on the right/left hand can be voiced with curly braces after the rhtyhm value. Values over or under the total number of chord tones will default to just the full chord.
 
-	ex. w(1):w(2):w(3): / (lowest note to second lowest to third lowest)
+	ex. w{1}:w{2}:w{3}: / (lowest note for inversion to second lowest to third lowest)
+	
+Note modifications on left hand in bass mode will modify bass note by however many semitones.
+
+	ex. w{-5}:w{10}:w{15}:
 
 **CHORDS AND QUALITY**
 
-Chords can be defined with any root A-G, # | b, and with maj, min, aug, and dim qualities. No quality is the same as maj.
+Chords can be defined with any root A-G, # | b, and with maj, min, aug, dim, sus2, and sus4 qualities. No quality defined is the same as maj.
 
 	ex. Cmin | Dbaug | Gmaj | Fdim | A |
 
 **EXTENSIONS AND COLOR**
 
-Extensions 7-13 in all of the harmonically logical places (no 8, 10, or 12). Maximum of 2 colors can be from 5-13 in similar places. Exceptions are in place and will output to canvas if chords or rhythm would produce malformed MIDI or are just illogical (such as a G#9b9 chord). Major quality + 7th will voice a major 7th, but any other quality will voice a dominant 7th.
+Extensions 7-13 in all of the usual places (no 8, 10, or 12). Maximum of 2 colors able to be defined and can be from 5-13 in usual places. Exceptions are in place and will output to canvas if chords or rhythm would produce malformed MIDI or are just illogical (such as a G#9b9 chord). Major quality + 7th will voice a major 7th, but any other quality will voice a dominant 7th.
 
 	ex. Cmin7 | Dbaug6#9 | Gmaj9b5 | Fdim11#13b9 | A13b11#5 |
 
@@ -69,6 +77,23 @@ Octave and inversion ranges from A0 - C8. Outside the range will result in an ex
 		
 	ex. Cmin7/G:4^^^ | Dbaug6#9/E:^^^ | Gmaj9b5:^^^^ | Fdim11#13b9/A:7^ | A13b11#5/Gb:3 |
 
+**ARPEGGIATIONS**
+
+Arpeggiations starting at lowest chord tone are in place. Default note value is eight note, but others can be defined. If the number of arpeggiated notes summed is less than the parent note value, then the last played note is held for the remainder of the duration. Else an exception is thrown.
+
+	ex. w#3#:w#8#:q#4s#:h#2q#:
+
+**LABELS**
+
+Labels can be created in the label editor. Simply type a header, and put the body of whatever you want in square brackets. Click save to save the current label in the editor, and delete to delete whatever label is in the ComboBox. 
+
+	ex. test: [ w:qqqq:h{3}: x 2]
+		 chords: [(Abmaj7 | Dmin6 | x 2) x 4] 
+		 
+**LOOP**
+
+Press loop to have whatever you have currently defined to be played back to you in a loop! Instrument can be defined in the combobox next to it.
+
 **FUTURE WORK**
 
-Arpeggiate and labels!
+Performance tweaks, smarter extended chord voicings, more arp modes, figuring out how to load saved labels in an exported jar, and midi to jzodd conversion...

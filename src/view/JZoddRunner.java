@@ -5,6 +5,7 @@ import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import jfxtras.styles.jmetro8.JMetro;
@@ -58,6 +59,8 @@ public class JZoddRunner extends Application{
 		});
 		
 		stage = primaryStage;
+		
+		stage.getIcons().add(new Image(JZoddRunner.class.getResourceAsStream("icon.png")));
 	}
 
 	public static Stage getStage() {
