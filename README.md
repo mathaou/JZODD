@@ -79,13 +79,13 @@ Octave and inversion ranges from A0 - C8. Outside the range will result in an ex
 
 **ARPEGGIATIONS**
 
-Arpeggiations starting at lowest chord tone are in place. Default note value is eight note, but others can be defined. If the number of arpeggiated notes summed is less than the parent note value, then the last played note is held for the remainder of the duration. Else an exception is thrown.
+Arpeggiations starting at lowest chord tone are in place. Default note value is eighth note, but others can be defined. If the number of arpeggiated notes summed is less than the parent note value, then the last played note is held for the remainder of the duration. If sum is greater an exception is thrown.
 
 	ex. w#3#:w#8#:q#4s#:h#2q#:
 
 **LABELS**
 
-Labels can be created in the label editor. Simply type a header, and put the body of whatever you want in square brackets. Click save to save the current label in the editor, and delete to delete whatever label is in the ComboBox. 
+Labels can be created in the label editor. Simply type a header, and put the body of whatever you want in square brackets after a colon. Click save to save the current label in the editor, and delete to delete whatever label is in the ComboBox. 
 
 	ex. test: [ w:qqqq:h{3}: x 2]
 		 chords: [(Abmaj7 | Dmin6 | x 2) x 4] 
